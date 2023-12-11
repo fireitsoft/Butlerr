@@ -12,7 +12,8 @@ table_history = {
         (0, 'id', 'INTEGER', 1, None, 1),
         (1, 'discord_username', 'TEXT', 1, None, 0),
         (2, 'email', 'TEXT', 0, None, 0),
-        (3, 'jellyfin_username', 'TEXT', 0, None, 0)
+        (3, 'jellyfin_username', 'TEXT', 0, None, 0),
+        (4, 'emby_username', 'TEXT', 0, None, 0)
     ]
 }
 
@@ -45,6 +46,7 @@ def update_table(conn, tablename):
         "discord_username"	TEXT NOT NULL UNIQUE,
         "email"	TEXT,
         "jellyfin_username" TEXT,
+        "emby_username" TEXT,
         PRIMARY KEY("id" AUTOINCREMENT)
         );''')
         conn.execute(f'''

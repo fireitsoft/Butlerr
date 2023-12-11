@@ -38,6 +38,7 @@ else:
     "discord_username"	TEXT NOT NULL UNIQUE,
     "email"	TEXT,
     "jellyfin_username" TEXT,
+    "emby_username" TEXT,
     PRIMARY KEY("id" AUTOINCREMENT)
     );''')
 
@@ -73,7 +74,18 @@ def save_user_jellyfin(username, jellyfin_username):
     else:
         return "Discord and Jellyfin usernames cannot be empty"
 
-def save_user_all(username, email, jellyfin_username):
+def save_user_emby(username, emby_username):
+    if username and emby_username:
+        conn.execute(f"""
+            INSERT OR REPLACE INTO clients(discord_username, emby_username)
+            VALUES('{username}', '{emby_username}')
+        """)
+        conn.commit()
+        print("User added to db.")
+    else:
+        return "Discord and Emby usernames cannot be empty"    
+
+def save_user_all(username, email, jellyfin_username, emby_username):
     if username and email and jellyfin_username:
         conn.execute(f"""
             INSERT OR REPLACE INTO clients(discord_username, email, jellyfin_username)
@@ -85,6 +97,8 @@ def save_user_all(username, email, jellyfin_username):
         save_user_email(username, email)
     elif username and jellyfin_username:
         save_user_jellyfin(username, jellyfin_username)
+    elif username and emby_username:
+        save_user_emby(username, emby_username)        
     elif username:
         save_user(username)
     else:
@@ -127,6 +141,28 @@ def get_jellyfin_username(username):
     else:
         return "username cannot be empty"
 
+def get_emby_username(username):
+    """
+    Get emby username of user based on discord username
+
+    param   username: discord username
+
+    return  emby username
+    """
+    if username:
+        try:
+            cursor = conn.execute('SELECT discord_username, emby_username from clients where discord_username="{}";'.format(username))
+            for row in cursor:
+                emby_username = row[1]
+            if emby_username:
+                return emby_username
+            else:
+                return "No users found"
+        except:
+            return "error in fetching from db"
+    else:
+        return "username cannot be empty"    
+
 def remove_email(username):
     """
     Sets email of discord user to null in database
@@ -148,6 +184,19 @@ def remove_jellyfin(username):
         conn.execute(f"UPDATE clients SET jellyfin_username = null WHERE discord_username = '{username}'")
         conn.commit()
         print(f"Jellyfin username removed from user {username} in database")
+        return True
+    else:
+        print(f"Username cannot be empty.")
+        return False
+
+def remove_emby(username):
+    """
+    Sets emby username of discord user to null in database
+    """
+    if username:
+        conn.execute(f"UPDATE clients SET emby_username = null WHERE discord_username = '{username}'")
+        conn.commit()
+        print(f"Emby username removed from user {username} in database")
         return True
     else:
         print(f"Username cannot be empty.")
