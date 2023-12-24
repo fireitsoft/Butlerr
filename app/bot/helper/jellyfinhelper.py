@@ -48,8 +48,9 @@ def add_user(jellyfin_url, jellyfin_api_key, username, password, jellyfin_libs):
             "EnableRemoteControlOfOtherUsers": False,
             "EnableSharedDeviceControl": True,
             "EnableRemoteAccess": True,
-            "EnableLiveTvManagement": True,
-            "EnableLiveTvAccess": True,
+            "EnableSharedDeviceControl": False,            
+            "EnableLiveTvManagement": False,
+            "EnableLiveTvAccess": False,
             "EnableMediaPlayback": True,
             "EnableAudioPlaybackTranscoding": True,
             "EnableVideoPlaybackTranscoding": True,
@@ -57,9 +58,9 @@ def add_user(jellyfin_url, jellyfin_api_key, username, password, jellyfin_libs):
             "ForceRemoteSourceTranscoding": False,
             "EnableContentDeletion": False,
             "EnableContentDeletionFromFolders": [],
-            "EnableContentDownloading": True,
-            "EnableSyncTranscoding": True,
-            "EnableMediaConversion": True,
+            "EnableContentDownloading": False,
+            "EnableSyncTranscoding": False,
+            "EnableMediaConversion": False,
             "EnabledDevices": [],
             "EnableAllDevices": True,
             "EnabledChannels": [],
@@ -68,14 +69,15 @@ def add_user(jellyfin_url, jellyfin_api_key, username, password, jellyfin_libs):
             "EnableAllFolders": jellyfin_libs[0] == "all",
             "InvalidLoginAttemptCount": 0,
             "LoginAttemptsBeforeLockout": -1,
-            "MaxActiveSessions": 0,
-            "EnablePublicSharing": True,
+            "MaxActiveSessions": 1,
+            "EnablePublicSharing": False,
             "BlockedMediaFolders": [],
             "BlockedChannels": [],
             "RemoteClientBitrateLimit": 0,
             "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
             "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
-            "SyncPlayAccess": "CreateAndJoinGroups"
+           #"SyncPlayAccess": "CreateAndJoinGroups"
+            "SyncPlayAccess": "None"
         }
         headers = {"content-type": "application/json"}
 

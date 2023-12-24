@@ -95,10 +95,10 @@ def add_user(emby_url, emby_api_key, username, password, emby_libs):
             "BlockedChannels": [],
             "EnablePublicSharing": False,
             "RemoteClientBitrateLimit": 0,
-            "SimultaneousStreamLimit": 2,
+            "SimultaneousStreamLimit": 1,
             "AuthenticationProviderId": "emby.Server.Implementations.Users.DefaultAuthenticationProvider",
             "PasswordResetProviderId": "emby.Server.Implementations.Users.DefaultPasswordResetProvider",
-            "SyncPlayAccess": "CreateAndJoinGroups"
+            "SyncPlayAccess": "None"
         }
         headers = {"content-type": "application/json"}
 

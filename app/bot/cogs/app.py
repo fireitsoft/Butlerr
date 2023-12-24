@@ -222,58 +222,42 @@ class app(commands.Cog):
                 await embederror(after, message)
                 return None
     
-    async def getusername(self, after):
+    async def getusername(self, after, platform):
         username = None
-        await embedinfo(after, f"Welcome To Jellyfin! Please reply with your username to be added to the Jellyfin server!")
-        await embedinfo(after, f"If you do not respond within 24 hours, the request will be cancelled, and the server admin will need to add you manually.")
+        if platform == "jelly":
+            await embedinfo(after, f"Welcome To Jellyfin! Please reply with your username to be added to the Jellyfin server!")
+        elif platform == "emby":
+            await embedinfo(after, f"Welcome To Emby! Please reply with your username to be added to the Emby server!")
+        await embedinfo(after, f"If you do not respond within 24 hours, the request will be cancelled, and you will need to be invited again.")
         while (username is None):
             def check(m):
                 return m.author == after and not m.guild
             try:
                 username = await self.bot.wait_for('message', timeout=86400, check=check)
-                if(jelly.verify_username(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY, str(username.content))):
-                    return str(username.content)
-                else:
-                    username = None
-                    message = "This username is already choosen. Please select another username."
-                    await embederror(after, message)
-                    continue
+                if platform == "jelly":
+                    if(jelly.verify_username(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY, str(username.content))):
+                        return str(username.content)
+                    else:
+                        username = None
+                        message = "This username is already choosen. Please select another username."
+                        await embederror(after, message)
+                        continue
+                elif platform == "emby":
+                    if(emby.verify_username(EMBY_SERVER_URL, EMBY_API_KEY, str(username.content))):
+                        return str(username.content)
+                    else:
+                        username = None
+                        message = "This username is already choosen. Please select another username."
+                        await embederror(after, message)
+                        continue                  
             except asyncio.TimeoutError:
-                message = "Timed out. Please contact the server admin directly."
-                print("Jellyfin user prompt timed out")
+                message = "The invite timed out. Please contact the server admin to be invited again."
                 await embederror(after, message)
                 return None
             except Exception as e:
                 await embederror(after, "Something went wrong. Please try again with another username.")
                 print (e)
-                username = None
-
-    async def getembyusername(self, after):
-        username = None
-        await embedinfo(after, f"Welcome To Emby! Please reply with your username to be added to the Emby server!")
-        await embedinfo(after, f"If you do not respond within 24 hours, the request will be cancelled, and the server admin will need to add you manually.")
-        while (username is None):
-            def check(m):
-                return m.author == after and not m.guild
-            try:
-                username = await self.bot.wait_for('message', timeout=86400, check=check)
-                if(emby.verify_username(EMBY_SERVER_URL, EMBY_API_KEY, str(username.content))):
-                    return str(username.content)
-                else:
-                    username = None
-                    message = "This username is already choosen. Please select another username."
-                    await embederror(after, message)
-                    continue
-            except asyncio.TimeoutError:
-                message = "Timed out. Please contact the server admin directly."
-                print("Emby user prompt timed out")
-                await embederror(after, message)
-                return None
-            except Exception as e:
-                await embederror(after, "Something went wrong. Please try again with another username.")
-                print (e)
-                username = None                
-
+                username = None             
 
     async def addtoplex(self, email, response):
         if(plexhelper.verifyemail(email)):
@@ -369,11 +353,13 @@ class app(commands.Cog):
                         if email is not None:
                             await embedinfo(after, "Got it we will be adding your email to plex shortly!")
                             if plexhelper.plexadd(plex,email,Plex_LIBS):
-                                db.save_user_email(str(after.id), email)
+                                db.save_user(str(after.id), email, 'plex')
                                 await asyncio.sleep(5)
                                 await embedinfo(after, 'You have Been Added To Plex! Login to plex and accept the invite!')
                             else:
                                 await embedinfo(after, 'There was an error adding this email address. Message Server Admin.')
+                        else:
+                            await after.remove_roles(role)
                         plex_processed = True
                         break
 
@@ -381,9 +367,9 @@ class app(commands.Cog):
                     elif role is not None and (role not in after.roles and role in before.roles):
                         try:
                             user_id = after.id
-                            email = db.get_useremail(user_id)
+                            email = db.get_username(user_id, 'plex')
                             plexhelper.plexremove(plex,email)
-                            deleted = db.remove_email(user_id)
+                            deleted = db.remove_username(user_id, 'plex')
                             if deleted:
                                 print("Removed Plex email {} from db".format(after.name))
                                 #await secure.send(plexname + ' ' + after.mention + ' was removed from plex')
@@ -409,18 +395,20 @@ class app(commands.Cog):
                     # Jellyfin role was added
                     if role is not None and (role in after.roles and role not in before.roles):
                         print("Jellyfin role added")
-                        username = await self.getusername(after)
+                        username = await self.getusername(after, 'jelly')
                         print("Username retrieved from user")
                         if username is not None:
                             await embedinfo(after, "Got it we will be creating your Jellyfin account shortly!")
                             password = jelly.generate_password(16)
                             if jelly.add_user(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY, username, password, jellyfin_libs):
-                                db.save_user_jellyfin(str(after.id), username)
+                                db.save_user(str(after.id), username, 'jellyfin')
                                 await asyncio.sleep(5)
                                 await embedcustom(after, "You have been added to Jellyfin!", {'Username': username, 'Password': f"||{password}||"})
                                 await embedinfo(after, f"Go to {JELLYFIN_EXTERNAL_URL} to log in!")
                             else:
                                 await embedinfo(after, 'There was an error adding this user to Jellyfin. Message Server Admin.')
+                        else:
+                            await after.remove_roles(role)
                         jellyfin_processed = True
                         break
 
@@ -429,9 +417,9 @@ class app(commands.Cog):
                         print("Jellyfin role removed")
                         try:
                             user_id = after.id
-                            username = db.get_jellyfin_username(user_id)
+                            username = db.get_username(user_id, 'jellyfin')
                             jelly.remove_user(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY, username)
-                            deleted = db.remove_jellyfin(user_id)
+                            deleted = db.remove_username(user_id, 'jellyfin')
                             if deleted:
                                 print("Removed Jellyfin from {}".format(after.name))
                                 #await secure.send(plexname + ' ' + after.mention + ' was removed from plex')
@@ -457,18 +445,20 @@ class app(commands.Cog):
                     # Emby role was added
                     if role is not None and (role in after.roles and role not in before.roles):
                         print("Emby role added")
-                        username = await self.getembyusername(after)
+                        username = await self.getusername(after, 'emby')
                         print("Username retrieved from user")
                         if username is not None:
                             await embedinfo(after, "Got it we will be creating your Emby account shortly!")
                             password = emby.generate_password(16)
                             if emby.add_user(EMBY_SERVER_URL, EMBY_API_KEY, username, password, emby_libs):
-                                db.save_user_emby(str(after.id), username)
+                                db.save_user(str(after.id), username, 'emby')
                                 await asyncio.sleep(5)
                                 await embedcustom(after, "You have been added to Emby!", {'Username': username, 'Password': f"||{password}||"})
                                 await embedinfo(after, f"Go to {EMBY_EXTERNAL_URL} to log in!")
                             else:
                                 await embedinfo(after, 'There was an error adding this user to Emby. Message Server Admin.')
+                        else:
+                            await after.remove_roles(role)
                         emby_processed = True
                         break
 
@@ -477,9 +467,9 @@ class app(commands.Cog):
                         print("Emby role removed")
                         try:
                             user_id = after.id
-                            username = db.get_emby_username(user_id)
+                            username = db.get_username(user_id, 'emby')
                             emby.remove_user(EMBY_SERVER_URL, EMBY_API_KEY, username)
-                            deleted = db.remove_emby(user_id)
+                            deleted = db.remove_username(user_id, 'emby')
                             if deleted:
                                 print("Removed Emby from {}".format(after.name))
                                 #await secure.send(plexname + ' ' + after.mention + ' was removed from plex')
@@ -498,15 +488,15 @@ class app(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         if USE_PLEX and plex_configured:
-            email = db.get_useremail(member.id)
+            email = db.get_username(member.id, 'plex')
             plexhelper.plexremove(plex,email)
         
         if USE_JELLYFIN and jellyfin_configured:
-            jellyfin_username = db.get_jellyfin_username(member.id)
+            jellyfin_username = db.get_username(member.id, 'jellyfin')
             jelly.remove_user(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY, jellyfin_username)
 
         if USE_EMBY and emby_configured:
-            emby_username = db.get_emby_username(member.id)
+            emby_username = db.get_username(member.id, 'emby')
             emby.remove_user(EMBY_SERVER_URL, EMBY_API_KEY, emby_username)            
             
         deleted = db.delete_user(member.id)

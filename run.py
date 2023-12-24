@@ -11,6 +11,7 @@ from app.bot.helper.confighelper import MEMBARR_VERSION, switch, Discord_bot_tok
 import app.bot.helper.confighelper as confighelper
 import app.bot.helper.jellyfinhelper as jelly
 import app.bot.helper.embyhelper as emby
+import app.bot.helper.db as db
 from app.bot.helper.message import *
 from requests import ConnectTimeout
 from plexapi.myplex import MyPlexAccount
@@ -46,10 +47,15 @@ class Bot(commands.Bot):
     async def setup_hook(self):
         print("Loading media server connectors")
         await self.load_extension(f'app.bot.cogs.app')
+        user_cleanup.start()
 
 
 bot = Bot()
 
+@tasks.loop(seconds=60)
+async def user_cleanup():
+  await bot.wait_until_ready()
+  db.cleanup_users()
 
 async def reload():
     await bot.reload_extension(f'app.bot.cogs.app')

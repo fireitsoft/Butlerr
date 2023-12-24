@@ -36,59 +36,46 @@ else:
     '''CREATE TABLE "clients" (
     "id"	INTEGER NOT NULL UNIQUE,
     "discord_username"	TEXT NOT NULL UNIQUE,
-    "email"	TEXT,
+    "plex_email"	TEXT,
     "jellyfin_username" TEXT,
     "emby_username" TEXT,
+    "created_at TEXT DEFAULT CURRENT_TIMESTAMP",
+    "invited_at TEXT DEFAULT CURRENT_TIMESTAMP",
+    "invited_to" TEXT,    
     PRIMARY KEY("id" AUTOINCREMENT)
     );''')
 
 update_table(conn, DB_TABLE)
 
-def save_user_email(username, email):
-    if username and email:
-        conn.execute(f"""
-            INSERT OR REPLACE INTO clients(discord_username, email)
-            VALUES('{username}', '{email}')
-        """)
-        conn.commit()
-        print("User added to db.")
-    else:
-        return "Username and email cannot be empty"
 
-def save_user(username):
-    if username:
-        conn.execute("INSERT INTO clients (discord_username) VALUES ('"+ username +"')")
+def save_user(discord_username, platform_username, platform):
+    if discord_username and platform_username:
+ 
+        if platform == 'plex':          
+            conn.execute(f"""
+                INSERT INTO clients (discord_username, plex_email) VALUES ('{discord_username}', '{platform_username}')
+                ON CONFLICT(discord_username) DO UPDATE SET plex_email='{platform_username}'
+            """)
+        elif platform == 'jellyfin':
+            conn.execute(f"""
+                INSERT INTO clients (discord_username, jellyfin_username) VALUES ('{discord_username}', '{platform_username}')
+                ON CONFLICT(discord_username) DO UPDATE SET jellyfin_username='{platform_username}'
+            """)
+        elif platform == 'emby':
+            conn.execute(f"""
+                INSERT INTO clients (discord_username, emby_username) VALUES ('{discord_username}', '{platform_username}')
+                ON CONFLICT(discord_username) DO UPDATE SET emby_username='{platform_username}'
+            """)            
         conn.commit()
         print("User added to db.")
     else:
-        return "Username cannot be empty"
+        return (f"Discord and '{platform}' usernames cannot be empty")
     
-def save_user_jellyfin(username, jellyfin_username):
-    if username and jellyfin_username:
-        conn.execute(f"""
-            INSERT OR REPLACE INTO clients(discord_username, jellyfin_username)
-            VALUES('{username}', '{jellyfin_username}')
-        """)
-        conn.commit()
-        print("User added to db.")
-    else:
-        return "Discord and Jellyfin usernames cannot be empty"
-
-def save_user_emby(username, emby_username):
-    if username and emby_username:
-        conn.execute(f"""
-            INSERT OR REPLACE INTO clients(discord_username, emby_username)
-            VALUES('{username}', '{emby_username}')
-        """)
-        conn.commit()
-        print("User added to db.")
-    else:
-        return "Discord and Emby usernames cannot be empty"    
 
 def save_user_all(username, email, jellyfin_username, emby_username):
     if username and email and jellyfin_username:
         conn.execute(f"""
-            INSERT OR REPLACE INTO clients(discord_username, email, jellyfin_username)
+            INSERT OR UPDATE INTO clients(discord_username, email, jellyfin_username)
             VALUES('{username}', '{email}', '{jellyfin_username}')
         """)
         conn.commit()
@@ -104,104 +91,44 @@ def save_user_all(username, email, jellyfin_username, emby_username):
     else:
         return "Discord username must all be provided"
 
-def get_useremail(username):
-    if username:
+def get_username(username, platform):
+        
+    if username and platform:
         try:
-            cursor = conn.execute('SELECT discord_username, email from clients where discord_username="{}";'.format(username))
+            if platform == "plex":
+                cursor = conn.execute('SELECT discord_username, plex_username from clients where discord_username="{}";'.format(username))
+            elif platform == "jellyfin":
+                cursor = conn.execute('SELECT discord_username, jellyfin_username from clients where discord_username="{}";'.format(username))
+            elif platform == "emby":
+                cursor = conn.execute('SELECT discord_username, emby_username from clients where discord_username="{}";'.format(username))
             for row in cursor:
-                email = row[1]
-            if email:
-                return email
-            else:
-                return "No email found"
-        except:
-            return "error in fetching from db"
-    else:
-        return "username cannot be empty"
-
-def get_jellyfin_username(username):
-    """
-    Get jellyfin username of user based on discord username
-
-    param   username: discord username
-
-    return  jellyfin username
-    """
-    if username:
-        try:
-            cursor = conn.execute('SELECT discord_username, jellyfin_username from clients where discord_username="{}";'.format(username))
-            for row in cursor:
-                jellyfin_username = row[1]
-            if jellyfin_username:
-                return jellyfin_username
+                pt_username = row[1]
+            if pt_username:
+                return pt_username
             else:
                 return "No users found"
         except:
-            return "error in fetching from db"
+            return "error in fetching from db"        
     else:
-        return "username cannot be empty"
-
-def get_emby_username(username):
+        return "username and platform cannot be empty"        
+   
+def remove_username(username, platform):
     """
-    Get emby username of user based on discord username
-
-    param   username: discord username
-
-    return  emby username
+    Sets username of discord user to null in database
     """
     if username:
-        try:
-            cursor = conn.execute('SELECT discord_username, emby_username from clients where discord_username="{}";'.format(username))
-            for row in cursor:
-                emby_username = row[1]
-            if emby_username:
-                return emby_username
-            else:
-                return "No users found"
-        except:
-            return "error in fetching from db"
-    else:
-        return "username cannot be empty"    
-
-def remove_email(username):
-    """
-    Sets email of discord user to null in database
-    """
-    if username:
-        conn.execute(f"UPDATE clients SET email = null WHERE discord_username = '{username}'")
+        if platform == "plex":
+            conn.execute(f"UPDATE clients SET plex_email = null WHERE discord_username = '{username}'")
+        elif platform == "jellyfin":
+            conn.execute(f"UPDATE clients SET jellyfin_username = null WHERE discord_username = '{username}'")
+        elif platform == "emby":
+            conn.execute(f"UPDATE clients SET emby_username = null WHERE discord_username = '{username}'")
         conn.commit()
-        print(f"Email removed from user {username} in database")
+        print(f"{platform} username removed from user {username} in database")
         return True
     else:
         print(f"Username cannot be empty.")
         return False
-
-def remove_jellyfin(username):
-    """
-    Sets jellyfin username of discord user to null in database
-    """
-    if username:
-        conn.execute(f"UPDATE clients SET jellyfin_username = null WHERE discord_username = '{username}'")
-        conn.commit()
-        print(f"Jellyfin username removed from user {username} in database")
-        return True
-    else:
-        print(f"Username cannot be empty.")
-        return False
-
-def remove_emby(username):
-    """
-    Sets emby username of discord user to null in database
-    """
-    if username:
-        conn.execute(f"UPDATE clients SET emby_username = null WHERE discord_username = '{username}'")
-        conn.commit()
-        print(f"Emby username removed from user {username} in database")
-        return True
-    else:
-        print(f"Username cannot be empty.")
-        return False
-
 
 def delete_user(username):
     if username:
@@ -213,6 +140,15 @@ def delete_user(username):
             return False
     else:
         return "username cannot be empty"
+
+def cleanup_users():
+
+    try:
+        conn.execute("DELETE from clients where email IS NULL AND jellyfin_username IS NULL AND emby_username IS NULL")
+        conn.commit()
+        return True
+    except:
+        return False
 
 def read_all():
     cur = conn.cursor()
