@@ -8,14 +8,14 @@ table_history = {
         (1, 'discord_username', 'TEXT', 1, None, 0),
         (2, 'email', 'TEXT', 1, None, 0),
     ],
-    'Butlerr V1.2': [
+    'Butlerr V1.3': [
         (0, 'id', 'INTEGER', 1, None, 1),
         (1, 'discord_username', 'TEXT', 1, None, 0),
         (2, 'plex_email', 'TEXT', 0, None, 0),
         (3, 'jellyfin_username', 'TEXT', 0, None, 0),
         (4, 'emby_username', 'TEXT', 0, None, 0),
-        (5, 'created_at', 'TEXT', 0, 'CURRENT_TIMESTAMP', 0),
-        (6, 'invited_at', 'TEXT', 0, 'CURRENT_TIMESTAMP', 0),
+        (5, 'created_at TEXT DEFAULT CURRENT_TIMESTAMP', '', 0, None, 0),
+        (6, 'invited_at TEXT DEFAULT CURRENT_TIMESTAMP', '', 0, None, 0),
         (7, 'invited_to', 'TEXT', 0, None, 0),
     ]
     
@@ -28,6 +28,7 @@ def check_table_version(conn, tablename):
     for app_version in table_history:
         if table_history[app_version] == table_format:
             return app_version
+        
     raise ValueError("Could not identify database table version.")
 
 def update_table(conn, tablename):
@@ -42,13 +43,13 @@ def update_table(conn, tablename):
     # Table NOT up to date.
     # Update to Butlerr V1.2 table
     if version == 'Invitarr V1.0':
-        print("Upgrading DB table from Invitarr v1.0 to Butlerr V1.2")
+        print("Upgrading DB table from Invitarr v1.0 to Butlerr V1.3")
         # Create temp table
         conn.execute(
         '''CREATE TABLE "membarr_temp_upgrade_table" (
         "id"	INTEGER NOT NULL UNIQUE,
         "discord_username"	TEXT NOT NULL UNIQUE,
-        "email"	TEXT,
+        "plex_email"	TEXT,
         "jellyfin_username" TEXT,
         "emby_username" TEXT,
         "created_at TEXT DEFAULT CURRENT_TIMESTAMP",
