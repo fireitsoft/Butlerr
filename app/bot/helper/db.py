@@ -144,8 +144,9 @@ def delete_user(username):
 def cleanup_users():
 
     try:
-        conn.execute("DELETE from clients where email IS NULL AND jellyfin_username IS NULL AND emby_username IS NULL")
+        conn.execute("DELETE from clients where plex_email IS NULL AND jellyfin_username IS NULL AND emby_username IS NULL")
         conn.commit()
+        print(f"Cleanup done.")
         return True
     except:
         return False
