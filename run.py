@@ -7,7 +7,7 @@ from discord.ui import Button, View, Select
 from discord import app_commands
 import asyncio
 import sys
-from app.bot.helper.confighelper import MEMBARR_VERSION, switch, Discord_bot_token, plex_roles, jellyfin_roles, emby_roles
+from app.bot.helper.confighelper import BUTLERR_VERSION, switch, Discord_bot_token, plex_roles, jellyfin_roles, emby_roles
 import app.bot.helper.confighelper as confighelper
 import app.bot.helper.jellyfinhelper as jelly
 import app.bot.helper.embyhelper as emby
@@ -76,9 +76,10 @@ async def getuser(interaction, server, type):
             return None
 
 
-plex_commands = app_commands.Group(name="plexsettings", description="Membarr Plex commands")
-jellyfin_commands = app_commands.Group(name="jellyfinsettings", description="Membarr Jellyfin commands")
-emby_commands = app_commands.Group(name="embysettings", description="Membarr Emby commands")
+plex_commands = app_commands.Group(name="plexsettings", description="Butlerr Plex commands")
+jellyfin_commands = app_commands.Group(name="jellyfinsettings", description="Butlerr Jellyfin commands")
+emby_commands = app_commands.Group(name="embysettings", description="Butlerr Emby commands")
+bot_commands = app_commands.Group(name="botsettings", description="Butlerr Bot commands")
 
 @plex_commands.command(name="addrole", description="Add a role to automatically add users to Plex")
 @app_commands.checks.has_permissions(administrator=True)
@@ -106,7 +107,7 @@ async def plexroleremove(interaction: discord.Interaction, role: discord.Role):
         return
     plex_roles.remove(role.name)
     confighelper.change_config("plex_roles", ",".join(plex_roles))
-    await interaction.response.send_message(f"Membarr will stop auto-adding \"{role.name}\" to Plex", ephemeral=True)
+    await interaction.response.send_message(f"Butlerr will stop auto-adding \"{role.name}\" to Plex", ephemeral=True)
 
 
 @plex_commands.command(name="listroles", description="List all roles whose members will be automatically added to Plex")
@@ -190,7 +191,7 @@ async def jellyroleremove(interaction: discord.Interaction, role: discord.Role):
         return
     jellyfin_roles.remove(role.name)
     confighelper.change_config("jellyfin_roles", ",".join(jellyfin_roles))
-    await interaction.response.send_message(f"Membarr will stop auto-adding \"{role.name}\" to Jellyfin",
+    await interaction.response.send_message(f"Butlerr will stop auto-adding \"{role.name}\" to Jellyfin",
                                             ephemeral=True)
 
 
@@ -229,7 +230,7 @@ async def setupjelly(interaction: discord.Interaction, server_url: str, api_key:
             return
         else:
             await embederror(interaction.followup,
-                             "Unknown error occurred while connecting to Jellyfin. Check Membarr logs.")
+                             "Unknown error occurred while connecting to Jellyfin. Check Butlerr logs.")
     except ConnectTimeout as e:
         await embederror(interaction.followup,
                          "Connection to server timed out. Check that Jellyfin is online and reachable.")
@@ -238,7 +239,7 @@ async def setupjelly(interaction: discord.Interaction, server_url: str, api_key:
         print("Exception while testing Jellyfin connection")
         print(type(e).__name__)
         print(e)
-        await embederror(interaction.followup, "Unknown exception while connecting to Jellyfin. Check Membarr logs")
+        await embederror(interaction.followup, "Unknown exception while connecting to Jellyfin. Check Butlerr logs")
         return
 
     confighelper.change_config("jellyfin_server_url", str(server_url))
@@ -279,7 +280,7 @@ async def embyroleremove(interaction: discord.Interaction, role: discord.Role):
         return
     emby_roles.remove(role.name)
     confighelper.change_config("emby_roles", ",".join(emby_roles))
-    await interaction.response.send_message(f"Membarr will stop auto-adding \"{role.name}\" to Emby",
+    await interaction.response.send_message(f"Butlerr will stop auto-adding \"{role.name}\" to Emby",
                                             ephemeral=True)
 
 
@@ -318,7 +319,7 @@ async def setupemby(interaction: discord.Interaction, server_url: str, api_key: 
             return
         else:
             await embederror(interaction.followup,
-                             "Unknown error occurred while connecting to Emby. Check Membarr logs.")
+                             "Unknown error occurred while connecting to Emby. Check Butlerr logs.")
     except ConnectTimeout as e:
         await embederror(interaction.followup,
                          "Connection to server timed out. Check that Emby is online and reachable.")
@@ -327,7 +328,7 @@ async def setupemby(interaction: discord.Interaction, server_url: str, api_key: 
         print("Exception while testing Emby connection")
         print(type(e).__name__)
         print(e)
-        await embederror(interaction.followup, "Unknown exception while connecting to Emby. Check Membarr logs")
+        await embederror(interaction.followup, "Unknown exception while connecting to Emby. Check Butlerr logs")
         return
 
     confighelper.change_config("emby_server_url", str(server_url))
@@ -484,8 +485,32 @@ async def disableemby(interaction: discord.Interaction):
 
 
 
+@bot_commands.command(name="logchannel", description="Set a channel for the bot logs")
+@app_commands.checks.has_permissions(administrator=True)
+async def setlogchannel(interaction: discord.Interaction, channel_id: str = None):
+
+    if not channel_id:
+        confighelper.change_config("logchannel_id", "")
+        confighelper.USE_LOG = False
+        await interaction.response.send_message("Disabled the LogChannel. Bot is restarting. Please wait a few seconds.",
+                                                ephemeral=True)
+        print("LogChannel id updated. Restarting bot.")
+        await reload()
+        print("Bot has been restarted. Give it a few seconds.")       
+        return
+    else:
+        confighelper.change_config("logchannel_id", channel_id)
+        confighelper.USE_LOG = True
+        await interaction.response.send_message("Updated the LogChannel. Bot is restarting. Please wait a few seconds.",
+                                                ephemeral=True)
+        print("LogChannel id updated. Restarting bot.")
+        await reload()
+        print("Bot has been restarted. Give it a few seconds.")
+
 bot.tree.add_command(plex_commands)
 bot.tree.add_command(jellyfin_commands)
 bot.tree.add_command(emby_commands)
+bot.tree.add_command(bot_commands)
+
 
 bot.run(Discord_bot_token)

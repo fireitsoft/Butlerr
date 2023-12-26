@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 CONFIG_PATH = 'app/config/config.ini'
 BOT_SECTION = 'bot_envs'
-MEMBARR_VERSION = 1.1
+BUTLERR_VERSION = 1.3
 
 config = configparser.ConfigParser()
 

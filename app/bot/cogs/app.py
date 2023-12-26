@@ -1,7 +1,6 @@
 from pickle import FALSE
-import app.bot.helper.jellyfinhelper as jelly
-import app.bot.helper.embyhelper as emby
 from app.bot.helper.textformat import bcolors
+from datetime import datetime
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -139,6 +138,12 @@ except:
     USE_PLEX = False
 
 try:
+    USE_LOG = config.get(BOT_SECTION, "logchannel_id")
+    #USE_LOG = USE_LOG.lower() == "true"
+except:
+    USE_LOG = False
+
+try:
     JELLYFIN_EXTERNAL_URL = config.get(BOT_SECTION, "jellyfin_external_url")
     if not JELLYFIN_EXTERNAL_URL:
         JELLYFIN_EXTERNAL_URL = JELLYFIN_SERVER_URL
@@ -175,10 +180,10 @@ else:
 
 class app(commands.Cog):
     # App command groups
-    plex_commands = app_commands.Group(name="plex", description="Membarr Plex commands")
-    jellyfin_commands = app_commands.Group(name="jellyfin", description="Membarr Jellyfin commands")
-    emby_commands = app_commands.Group(name="emby", description="Membarr Emby commands")
-    membarr_commands = app_commands.Group(name="membarr", description="Membarr general commands")
+    plex_commands = app_commands.Group(name="plex", description="Butlerr Plex commands")
+    jellyfin_commands = app_commands.Group(name="jellyfin", description="Butlerr Jellyfin commands")
+    emby_commands = app_commands.Group(name="emby", description="Butlerr Emby commands")
+    butlerr_commands = app_commands.Group(name="butlerr", description="Butlerr general commands")
 
     def __init__(self, bot):
         self.bot = bot
@@ -186,12 +191,12 @@ class app(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print('------')
-        print("{:^41}".format(f"MEMBARR V {MEMBARR_VERSION}"))
-        print(f'Made by Yoruio https://github.com/Yoruio/\n')
-        print(f'Forked from Invitarr https://github.com/Sleepingpirates/Invitarr')
-        print(f'Named by lordfransie')
+        print("{:^41}".format(f"Butlerr V{BUTLERR_VERSION}"))
+        print(f'Made by Velun https://github.com/fireitsoft\n')
+        print(f'Forked from Membarr https://github.com/Yoruio/Membarr')
         print(f'Logged in as {self.bot.user} (ID: {self.bot.user.id})')
         print('------')
+        await self.write_logs("Bot started")
 
         # TODO: Make these debug statements work. roles are currently empty arrays if no roles assigned.
         if plex_roles is None:
@@ -200,6 +205,37 @@ class app(commands.Cog):
             print('Configure Jellyfin roles to enable auto invite to Jellyfin after a role is assigned.')
         if emby_roles is None:
             print('Configure Emby roles to enable auto invite to Emby after a role is assigned.')
+
+    async def write_logs(self, message: str, mtype: str=None):
+        if USE_LOG:
+            channel_id = config.get(BOT_SECTION, 'logchannel_id')
+            channel = self.bot.get_channel(int(channel_id))
+            color = discord.Color.blue()
+            title = "Info"
+            if channel:
+                if mtype:
+                    if mtype == "info":
+                        color = discord.Color.blue()
+                        title = "Info"
+                    elif mtype == "warning":
+                        color = discord.Color.gold()
+                        title = "Warning"
+                    elif mtype == "error":
+                        color = discord.Color.brand_red()
+                        title = "Error"
+                    elif mtype == "success":
+                        color = discord.Color.green()
+                        title = "Success"
+                    elif mtype == "fancy":
+                        color = discord.Color.fuchsia()
+                        title = "Message"
+                embed = discord.Embed(title=title, description=datetime.now().strftime("%d/%m/%Y %H:%M:%S") + ": " + message, color=color)
+                await channel.send(embed=embed)
+                #await channel.send(datetime.now().strftime("%d/%m/%Y %H:%M:%S") + "\n" + message)
+            else:
+                print(f"Channel with ID {channel_id} not found.")
+        else:
+            print("Logging disabled")
     
     async def getemail(self, after):
         email = None
@@ -352,12 +388,15 @@ class app(commands.Cog):
                         email = await self.getemail(after)
                         if email is not None:
                             await embedinfo(after, "Got it we will be adding your email to plex shortly!")
+                            await self.write_logs("User **" + after.mention + "** sets plex email to **" + email + "**")
                             if plexhelper.plexadd(plex,email,Plex_LIBS):
                                 db.save_user(str(after.id), email, 'plex')
                                 await asyncio.sleep(5)
                                 await embedinfo(after, 'You have Been Added To Plex! Login to plex and accept the invite!')
+                                await self.write_logs("Email **" + email + "** was created on Plex for discord user **" + after.mention + "**", "success")
                             else:
                                 await embedinfo(after, 'There was an error adding this email address. Message Server Admin.')
+                                await self.write_logs("There was an error adding **" + email + "** on plex. Contact **" + after.name + "** on discord if you need info.", "error")
                         else:
                             await after.remove_roles(role)
                         plex_processed = True
@@ -372,13 +411,16 @@ class app(commands.Cog):
                             deleted = db.remove_username(user_id, 'plex')
                             if deleted:
                                 print("Removed Plex email {} from db".format(after.name))
+                                await self.write_logs("Removed Plex from **" + after.mention + "**", "success")
                                 #await secure.send(plexname + ' ' + after.mention + ' was removed from plex')
                             else:
                                 print("Cannot remove Plex from this user.")
+                                await self.write_logs("Cannot remove **PLEX** from **" + after.mention + "** with id " + after.id + ". Please check your database.", "error")
                             await embedinfo(after, "You have been removed from Plex")
                         except Exception as e:
                             print(e)
                             print("{} Cannot remove this user from plex.".format(email))
+                            await self.write_logs("Cannot remove **" + email + "** from Plex.", "error")
                         plex_processed = True
                         break
                 if plex_processed:
@@ -395,26 +437,32 @@ class app(commands.Cog):
                     # Jellyfin role was added
                     if role is not None and (role in after.roles and role not in before.roles):
                         print("Jellyfin role added")
+                        await self.write_logs("User **" + after.mention + "** invited to jellyfin.")
                         username = await self.getusername(after, 'jelly')
                         print("Username retrieved from user")
                         if username is not None:
                             await embedinfo(after, "Got it we will be creating your Jellyfin account shortly!")
+                            await self.write_logs("User **" + after.mention + "** sets jellyfin username to **" + username + "**")
                             password = jelly.generate_password(16)
                             if jelly.add_user(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY, username, password, jellyfin_libs):
                                 db.save_user(str(after.id), username, 'jellyfin')
                                 await asyncio.sleep(5)
                                 await embedcustom(after, "You have been added to Jellyfin!", {'Username': username, 'Password': f"||{password}||"})
                                 await embedinfo(after, f"Go to {JELLYFIN_EXTERNAL_URL} to log in!")
+                                await self.write_logs("User **" + username + "** was created on jellyfin for discord user **" + after.mention + "**", "success")
                             else:
                                 await embedinfo(after, 'There was an error adding this user to Jellyfin. Message Server Admin.')
+                                await self.write_logs("There was an error adding **" + username + "** on jellyfin. Contact **" + after.name + "** on discord if you need info.", "error")
                         else:
                             await after.remove_roles(role)
+                            await self.write_logs("The invite expired. We removed role " + str(role) + " from **" + after.mention + "**.", "warning")
                         jellyfin_processed = True
                         break
 
                     # Jellyfin role was removed
                     elif role is not None and (role not in after.roles and role in before.roles):
                         print("Jellyfin role removed")
+                        await self.write_logs("Role **" + str(role) + "** was removed for discord user **" + after.mention + "**", "success")
                         try:
                             user_id = after.id
                             username = db.get_username(user_id, 'jellyfin')
@@ -422,13 +470,15 @@ class app(commands.Cog):
                             deleted = db.remove_username(user_id, 'jellyfin')
                             if deleted:
                                 print("Removed Jellyfin from {}".format(after.name))
-                                #await secure.send(plexname + ' ' + after.mention + ' was removed from plex')
+                                await self.write_logs("Removed Jellyfin from **" + after.mention + "**", "success")
                             else:
                                 print("Cannot remove Jellyfin from this user")
+                                await self.write_logs("Cannot remove **Jellyfin** from **" + after.mention + "** with id " + after.mention + ".", "error")
                             await embedinfo(after, "You have been removed from Jellyfin")
                         except Exception as e:
                             print(e)
                             print("{} Cannot remove this user from Jellyfin.".format(username))
+                            await self.write_logs("Cannot remove **" + after.mention + "** from Jellyfin.", "error")
                         jellyfin_processed = True
                         break
                 if jellyfin_processed:
@@ -445,26 +495,32 @@ class app(commands.Cog):
                     # Emby role was added
                     if role is not None and (role in after.roles and role not in before.roles):
                         print("Emby role added")
+                        await self.write_logs("User **" + after.mention + "** invited to emby.")
                         username = await self.getusername(after, 'emby')
                         print("Username retrieved from user")
                         if username is not None:
                             await embedinfo(after, "Got it we will be creating your Emby account shortly!")
                             password = emby.generate_password(16)
+                            await self.write_logs("User **" + after.mention + "** sets emby username to **" + username + "**")
                             if emby.add_user(EMBY_SERVER_URL, EMBY_API_KEY, username, password, emby_libs):
                                 db.save_user(str(after.id), username, 'emby')
                                 await asyncio.sleep(5)
                                 await embedcustom(after, "You have been added to Emby!", {'Username': username, 'Password': f"||{password}||"})
                                 await embedinfo(after, f"Go to {EMBY_EXTERNAL_URL} to log in!")
+                                await self.write_logs("User **" + username + "** was created on emby for discord user **" + after.mention + "**", "success")
                             else:
                                 await embedinfo(after, 'There was an error adding this user to Emby. Message Server Admin.')
+                                await self.write_logs("There was an error adding **" + username + "** on emby. Contact **" + after.name + "** on discord if you need info.", "error")
                         else:
                             await after.remove_roles(role)
+                            await self.write_logs("The invite expired. We removed role " + str(role) + " from **" + after.mention + "**.", "warning")
                         emby_processed = True
                         break
 
                     # Emby role was removed
                     elif role is not None and (role not in after.roles and role in before.roles):
                         print("Emby role removed")
+                        await self.write_logs("Role **" + str(role) + "** was removed for discord user **" + after.mention + "**", "success")
                         try:
                             user_id = after.id
                             username = db.get_username(user_id, 'emby')
@@ -472,13 +528,16 @@ class app(commands.Cog):
                             deleted = db.remove_username(user_id, 'emby')
                             if deleted:
                                 print("Removed Emby from {}".format(after.name))
+                                await self.write_logs("Removed Emby from **" + after.mention + "**", "success")
                                 #await secure.send(plexname + ' ' + after.mention + ' was removed from plex')
                             else:
                                 print("Cannot remove Emby from this user")
+                                await self.write_logs("Cannot remove **Emby** from **" + after.mention + "** with id " + after.mention + ".", "error")
                             await embedinfo(after, "You have been removed from Emby")
                         except Exception as e:
                             print(e)
                             print("{} Cannot remove this user from Jellyfin.".format(username))
+                            await self.write_logs("Cannot remove **" + after.mention + "** from Jellyfin.", "error")
                         emby_processed = True
                         break
                 if emby_processed:
@@ -539,7 +598,7 @@ class app(commands.Cog):
         await self.removefromemby(username, interaction.response)        
     
     @app_commands.checks.has_permissions(administrator=True)
-    @membarr_commands.command(name="dbadd", description="Add a user to the Membarr database")
+    @butlerr_commands.command(name="dbadd", description="Add a user to the Butlerr database")
     async def dbadd(self, interaction: discord.Interaction, member: discord.Member, email: str = "", jellyfin_username: str = ""):
         email = email.strip()
         jellyfin_username = jellyfin_username.strip()
@@ -553,14 +612,14 @@ class app(commands.Cog):
             db.save_user_all(str(member.id), email, jellyfin_username, emby_username)
             await embedinfo(interaction.response,'User was added to the database.')
         except Exception as e:
-            await embedinfo(interaction.response, 'There was an error adding this user to database. Check Membarr logs for more info')
+            await embedinfo(interaction.response, 'There was an error adding this user to database. Check Butlerr logs for more info')
             print(e)
 
     @app_commands.checks.has_permissions(administrator=True)
-    @membarr_commands.command(name="dbls", description="View Membarr database")
+    @butlerr_commands.command(name="dbls", description="View Butlerr database")
     async def dbls(self, interaction: discord.Interaction):
 
-        embed = discord.Embed(title='Membarr Database.')
+        embed = discord.Embed(title='Butlerr Database.')
         all = db.read_all()
         table = texttable.Texttable()
         table.set_cols_dtype(["t", "t", "t", "t", "t"])
@@ -592,9 +651,9 @@ class app(commands.Cog):
         
             
     @app_commands.checks.has_permissions(administrator=True)
-    @membarr_commands.command(name="dbrm", description="Remove user from Membarr database")
+    @butlerr_commands.command(name="dbrm", description="Remove user from Butlerr database")
     async def dbrm(self, interaction: discord.Interaction, position: int):
-        embed = discord.Embed(title='Membarr Database.')
+        embed = discord.Embed(title='Butlerr Database.')
         all = db.read_all()
         for index, peoples in enumerate(all):
             index = index + 1
@@ -625,3 +684,4 @@ class app(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(app(bot))
+        

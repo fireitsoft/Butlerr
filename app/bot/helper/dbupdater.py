@@ -1,6 +1,6 @@
 import sqlite3
 
-CURRENT_VERSION = 'Membarr V1.2'
+CURRENT_VERSION = 'Butlerr V1.2'
 
 table_history = {
     'Invitarr V1.0': [
@@ -8,7 +8,7 @@ table_history = {
         (1, 'discord_username', 'TEXT', 1, None, 0),
         (2, 'email', 'TEXT', 1, None, 0),
     ],
-    'Membarr V1.2': [
+    'Butlerr V1.2': [
         (0, 'id', 'INTEGER', 1, None, 1),
         (1, 'discord_username', 'TEXT', 1, None, 0),
         (2, 'plex_email', 'TEXT', 0, None, 0),
@@ -40,9 +40,9 @@ def update_table(conn, tablename):
         return
 
     # Table NOT up to date.
-    # Update to Membarr V1.2 table
+    # Update to Butlerr V1.2 table
     if version == 'Invitarr V1.0':
-        print("Upgrading DB table from Invitarr v1.0 to Membarr V1.2")
+        print("Upgrading DB table from Invitarr v1.0 to Butlerr V1.2")
         # Create temp table
         conn.execute(
         '''CREATE TABLE "membarr_temp_upgrade_table" (
@@ -68,7 +68,7 @@ def update_table(conn, tablename):
         ALTER TABLE membarr_temp_upgrade_table RENAME TO {tablename}
         ''')
         conn.commit()
-        version = 'Membarr V1.2'
+        version = 'Butlerr V1.2'
 
     print('------')
     
