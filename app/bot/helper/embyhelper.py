@@ -52,7 +52,7 @@ def add_user(emby_url, emby_api_key, username, password, emby_libs):
                 found = False
                 for server_lib in server_libs:
                     if lib == server_lib['Name']:
-                        enabled_folders.append(server_lib['ItemId'])
+                        enabled_folders.append(server_lib['Guid'])
                         found = True
                 if not found:
                     print(f"Couldn't find emby Library: {lib}")
