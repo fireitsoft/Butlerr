@@ -562,6 +562,20 @@ class app(commands.Cog):
         if deleted:
             print("Removed {} from db because user left discord server.".format(email))
 
+    #welcome message
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        channel = member.guild.system_channel
+        if channel is not None:
+           await channel.send("Hey **" + member.mention +"**, welcome to BatCave!\n Head over to <#1208463345057800202> and type the platform you want to get invited. You type jellyfin or emby and nothing else, and you will get invited when there are available spots.")
+            
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        channel = member.guild.system_channel
+        if channel is not None:
+            await channel.send("The bat **" + member.mention +"** has left the colony.")
+ 
     @app_commands.checks.has_permissions(administrator=True)
     @plex_commands.command(name="invite", description="Invite a user to Plex")
     async def plexinvite(self, interaction: discord.Interaction, email: str):
@@ -681,7 +695,9 @@ class app(commands.Cog):
                 await embederror(interaction.response,"Cannot remove this user from db.")
         except Exception as e:
             print(e)
+        
 
 async def setup(bot):
-    await bot.add_cog(app(bot))
-        
+    await bot.add_cog(app(bot)) 
+    
+
