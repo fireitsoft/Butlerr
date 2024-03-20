@@ -37,6 +37,12 @@ This command is used to add exsisting  plex emails, jellyfin users and discord i
 /butlerr dbrm <position>
 This command is used to remove a record from the Db. Use /butlerr dbls to determine record position. ex: /butlerr dbrm 1
 ```
+
+User Commands: 
+```
+!spot
+This command is used by the people who are on the waiting list to check their place on the list.
+```
 # Creating Discord Bot
 1. Create the discord server that your users will get member roles or use an existing discord that you can assign roles from
 2. Log into https://discord.com/developers/applications and click 'New Application'
