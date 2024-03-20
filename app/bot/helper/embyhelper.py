@@ -56,7 +56,7 @@ def add_user(emby_url, emby_api_key, username, password, emby_libs):
                         found = True
                 if not found:
                     print(f"Couldn't find emby Library: {lib}")
-
+                    
         payload = {
             "IsAdministrator": False,
             "IsHidden": True,

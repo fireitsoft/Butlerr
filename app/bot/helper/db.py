@@ -4,6 +4,7 @@ from app.bot.helper.dbupdater import check_table_version, update_table
 
 DB_URL = 'app/config/app.db'
 DB_TABLE = 'clients'
+DB_WAITING = 'waiting'
 
 def create_connection(db_file):
     """ create a database connection to a SQLite database """
@@ -46,6 +47,19 @@ else:
     );''')
 
 update_table(conn, DB_TABLE)
+
+# Checking if the waiting table exists
+if checkTableExists(conn, DB_WAITING):
+	print('Table exists.')
+else:
+    conn.execute(
+    '''CREATE TABLE "waiting" (
+    "id"	INTEGER NOT NULL UNIQUE,
+    "discord_username"	TEXT NOT NULL UNIQUE,
+    "platform"	TEXT,
+    "created_at TEXT DEFAULT CURRENT_TIMESTAMP", 
+    PRIMARY KEY("id" AUTOINCREMENT)
+    );''')
 
 
 def save_user(discord_username, platform_username, platform):
@@ -90,6 +104,33 @@ def save_user_all(username, email, jellyfin_username, emby_username):
         save_user(username)
     else:
         return "Discord username must all be provided"
+
+
+def save_waiting(discord_username, platform):
+        #first we delete the record if it exists so we can reset the waiting position
+        conn.execute('DELETE from waiting where discord_username="{}";'.format(discord_username))
+        conn.commit()
+
+        conn.execute(f"""
+            INSERT INTO waiting(discord_username, platform)
+            VALUES('{discord_username}', '{platform}')
+        """)
+        conn.commit()
+        print("User added to db.")   
+
+def get_waiting_place(discord_username):
+    select = conn.execute('SELECT count(id)+1 FROM waiting WHERE id < (SELECT id FROM waiting WHERE discord_username = "{}") AND platform = (SELECT platform FROM waiting WHERE discord_username = "{}");'.format(discord_username, discord_username))
+    
+    for row in select:
+        for elem in row:
+            place = elem
+    
+    if(place):
+        return place
+    else:
+        return "You're not on the waiting list"    
+
+
 
 def get_username(username, platform):
         
@@ -140,6 +181,18 @@ def delete_user(username):
             return False
     else:
         return "username cannot be empty"
+    
+
+def delete_user_waiting(username):
+    if username:
+        try:
+            conn.execute('DELETE from waiting where discord_username="{}";'.format(username))
+            conn.commit()
+            return True
+        except:
+            return False
+    else:
+        return "username cannot be empty"   
 
 def cleanup_users():
 

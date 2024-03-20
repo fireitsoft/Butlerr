@@ -9,13 +9,14 @@ BUTLERR_VERSION = 1.3
 
 config = configparser.ConfigParser()
 
-CONFIG_KEYS = ['username', 'password', 'discord_bot_token', 'plex_user', 'plex_pass', 'plex_token',
+CONFIG_KEYS = ['username', 'password', 'discord_bot_token', 'discord_waiting_list', 'plex_user', 'plex_pass', 'plex_token',
                 'plex_base_url', 'plex_roles', 'plex_server_name', 'plex_libs', 'owner_id', 'channel_id',
                 'auto_remove_user', 'jellyfin_api_key', 'jellyfin_server_url', 'jellyfin_roles',
                 'jellyfin_libs', 'emby_api_key', 'emby_server_url', 'emby_roles', 'emby_libs', 'plex_enabled', 'jellyfin_enabled', 'emby_enabled', 'jellyfin_external_url', 'emby_external_url']
 
 # settings
 Discord_bot_token = ""
+Discord_waiting_list = ""
 plex_roles = None
 PLEXUSER = ""
 PLEXPASS = ""
@@ -43,7 +44,8 @@ if(path.exists('bot.env')):
     try:
         load_dotenv(dotenv_path='bot.env')
         # settings
-        Discord_bot_token = environ.get('discord_bot_token')            
+        Discord_bot_token = environ.get('discord_bot_token')
+        Discord_waiting_list = environ.get('discord_waiting_list')          
         switch = 1
     
     except Exception as e:
@@ -51,6 +53,7 @@ if(path.exists('bot.env')):
 
 try:
     Discord_bot_token = str(os.environ['token'])
+    Discord_waiting_list = str(os.environ['WaitingListId'])
     switch = 1
 except Exception as e:
     pass

@@ -69,7 +69,7 @@ def add_user(jellyfin_url, jellyfin_api_key, username, password, jellyfin_libs):
             "EnableAllFolders": jellyfin_libs[0] == "all",
             "InvalidLoginAttemptCount": 0,
             "LoginAttemptsBeforeLockout": -1,
-            "MaxActiveSessions": 1,
+            "MaxActiveSessions": 3,
             "EnablePublicSharing": False,
             "BlockedMediaFolders": [],
             "BlockedChannels": [],

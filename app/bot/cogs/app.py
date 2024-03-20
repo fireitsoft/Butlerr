@@ -197,6 +197,9 @@ class app(commands.Cog):
         print(f'Logged in as {self.bot.user} (ID: {self.bot.user.id})')
         print('------')
         await self.write_logs("Bot started")
+        #await self.write_logs(f"{Discord_leave_message}")
+        #await self.write_logs(f"{Discord_leave_message}")
+        
 
         # TODO: Make these debug statements work. roles are currently empty arrays if no roles assigned.
         if plex_roles is None:
@@ -367,6 +370,7 @@ class app(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
+        
         if plex_roles is None and jellyfin_roles is None and emby_roles is None:
             return
         roles_in_guild = after.guild.roles
@@ -375,6 +379,12 @@ class app(commands.Cog):
         plex_processed = False
         jellyfin_processed = False
         emby_processed = False
+
+        #first we remove the user from the waiting list
+        waiting = db.delete_user_waiting(after.id)
+        if(waiting):
+            await self.write_logs("User **" + after.mention + "** deleted from waiting list.")
+
 
         # Check Plex roles
         if plex_configured and USE_PLEX:
@@ -542,10 +552,15 @@ class app(commands.Cog):
                         break
                 if emby_processed:
                     break
+
                 
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
+        channel = member.guild.system_channel
+        if channel is not None:
+            await channel.send("The bat **" + member.mention +"** has left the colony.")
+            
         if USE_PLEX and plex_configured:
             email = db.get_username(member.id, 'plex')
             plexhelper.plexremove(plex,email)
@@ -560,22 +575,62 @@ class app(commands.Cog):
             
         deleted = db.delete_user(member.id)
         if deleted:
-            print("Removed {} from db because user left discord server.".format(email))
+            if USE_PLEX and plex_configured:
+                if email is not None:
+                    await self.write_logs("Removed {} from db because user left discord server.".format(email))
+            if USE_JELLYFIN and jellyfin_configured:
+                if jellyfin_username is not None:
+                    await self.write_logs("Removed {} from db because user left discord server.".format(jellyfin_username))
+            if USE_EMBY and emby_configured:
+                if emby_username is not None:
+                    await self.write_logs("Removed {} from db because user left discord server.".format(emby_username))
+
+        waiting = db.delete_user_waiting(member.id)                   
+        if(waiting):
+            await self.write_logs("Removed {} from waiting list because user left discord server.".format(member.mention))
 
     #welcome message
     @commands.Cog.listener()
     async def on_member_join(self, member):
         channel = member.guild.system_channel
         if channel is not None:
-           await channel.send("Hey **" + member.mention +"**, welcome to BatCave!\n Head over to <#1208463345057800202> and type the platform you want to get invited. You type jellyfin or emby and nothing else, and you will get invited when there are available spots.")
+           #await channel.send(f"Hey **" + member.mention +"**, welcome to BatCave!\n Head over to <#{Discord_waiting_list}> and type the platform you want to get invited. You type jellyfin for invite to jellyfin server or emby for emby server, and you will get invited when there are available spots.")
+           await channel.send("Hey **" + member.mention + "**, welcome to BatCave!\nHead over to <#1208463345057800202> and type the platform you want to get invited. You type jellyfin for invite to jellyfin server or emby for emby server, and you will get invited when there are available spots.")
             
+    @commands.Cog.listener()      
+    async def on_message(self, message):
+        #username = str(message.author).split("#")[0] 
+        #channel = str(message.channel.id) 
+        #user_message = str(message.content) 
+        if(str(message.channel.id) == '1208463345057800202'):
+            if message.content.lower() in ("emby", "jellyfin", "plex"):
+                db.save_waiting(message.author.id, message.content.lower())
 
-    @commands.Cog.listener()
-    async def on_member_remove(self, member):
-        channel = member.guild.system_channel
-        if channel is not None:
-            await channel.send("The bat **" + member.mention +"** has left the colony.")
- 
+                place = db.get_waiting_place(message.author.id)
+                if place == 1:
+                    await embedinfo(message.author,"You are number {} on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
+                elif place > 1 and place < 4:
+                    await embedinfo(message.author,"You are on the {}rd place on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
+                else:
+                    await embedinfo(message.author,"You are on the {}th place on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
+                    #await message.author.send("You're name was added to the waiting list. You are on the {}th place on the list!".format(place))  
+
+
+        #we make a public command
+        if message.content.lower() == "!spot":
+            place = db.get_waiting_place(message.author.id)
+            if place == 1:
+                await embedinfo(message.author,"You are number {} on the waiting list!".format(place))
+            elif place > 1 and place < 4:
+                await embedinfo(message.author,"You are on the {}rd place on the waiting list!".format(place))
+            else:
+                await embedinfo(message.author,"You are on the {}th place on the waiting list!".format(place))           
+
+        #if message.content.lower() == "emby":
+        #    await message.channel.send(f"{message.author.mention}, Pong!")
+        #    #db.save_waiting(str(after.id), email, 'emby')
+
+
     @app_commands.checks.has_permissions(administrator=True)
     @plex_commands.command(name="invite", description="Invite a user to Plex")
     async def plexinvite(self, interaction: discord.Interaction, email: str):
@@ -613,7 +668,7 @@ class app(commands.Cog):
     
     @app_commands.checks.has_permissions(administrator=True)
     @butlerr_commands.command(name="dbadd", description="Add a user to the Butlerr database")
-    async def dbadd(self, interaction: discord.Interaction, member: discord.Member, email: str = "", jellyfin_username: str = ""):
+    async def dbadd(self, interaction: discord.Interaction, member: discord.Member, email: str = "", jellyfin_username: str = "", emby_username: str = ""):
         email = email.strip()
         jellyfin_username = jellyfin_username.strip()
         
