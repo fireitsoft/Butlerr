@@ -16,7 +16,6 @@ CONFIG_KEYS = ['username', 'password', 'discord_bot_token', 'discord_waiting_lis
 
 # settings
 Discord_bot_token = ""
-Discord_waiting_list = ""
 plex_roles = None
 PLEXUSER = ""
 PLEXPASS = ""
@@ -44,8 +43,7 @@ if(path.exists('bot.env')):
     try:
         load_dotenv(dotenv_path='bot.env')
         # settings
-        Discord_bot_token = environ.get('discord_bot_token')
-        Discord_waiting_list = environ.get('discord_waiting_list')          
+        Discord_bot_token = environ.get('discord_bot_token')         
         switch = 1
     
     except Exception as e:
@@ -53,7 +51,6 @@ if(path.exists('bot.env')):
 
 try:
     Discord_bot_token = str(os.environ['token'])
-    Discord_waiting_list = str(os.environ['WaitingListId'])
     switch = 1
 except Exception as e:
     pass
