@@ -264,9 +264,9 @@ class app(commands.Cog):
     async def getusername(self, after, platform):
         username = None
         if platform == "jelly":
-            await embedinfo(after, f"Welcome To Jellyfin! Please reply with your username to be added to the Jellyfin server!")
+            await embedinfo(after, f"Welcome To Jellyfin! Please reply with your desiered username to be added to the Jellyfin server!")
         elif platform == "emby":
-            await embedinfo(after, f"Welcome To Emby! Please reply with your username to be added to the Emby server!")
+            await embedinfo(after, f"Welcome To Emby! Please reply with your desiered username to be added to the Emby server!")
         await embedinfo(after, f"If you do not respond within 24 hours, the request will be cancelled, and you will need to be invited again.")
         while (username is None):
             def check(m):
@@ -380,11 +380,6 @@ class app(commands.Cog):
         jellyfin_processed = False
         emby_processed = False
 
-        #first we remove the user from the waiting list
-        waiting = db.delete_user_waiting(after.id)
-        if(waiting):
-            await self.write_logs("User **" + after.mention + "** deleted from waiting list.")
-
 
         # Check Plex roles
         if plex_configured and USE_PLEX:
@@ -392,6 +387,11 @@ class app(commands.Cog):
                 for role_in_guild in roles_in_guild:
                     if role_in_guild.name == role_for_app:
                         role = role_in_guild
+
+                    #if the user is added to plex then we remove him from waiting list
+                    waiting = db.delete_user_waiting(after.id)
+                    if(waiting):
+                        await self.write_logs("User **" + after.mention + "** deleted from waiting list.")
 
                     # Plex role was added
                     if role is not None and (role in after.roles and role not in before.roles):
@@ -447,6 +447,10 @@ class app(commands.Cog):
                     # Jellyfin role was added
                     if role is not None and (role in after.roles and role not in before.roles):
                         print("Jellyfin role added")
+                        #if the user is added to jellyfin then we remove him from waiting list
+                        waiting = db.delete_user_waiting(after.id)
+                        if(waiting):
+                            await self.write_logs("User **" + after.mention + "** deleted from waiting list.")                        
                         await self.write_logs("User **" + after.mention + "** invited to jellyfin.")
                         username = await self.getusername(after, 'jelly')
                         print("Username retrieved from user")
@@ -505,6 +509,10 @@ class app(commands.Cog):
                     # Emby role was added
                     if role is not None and (role in after.roles and role not in before.roles):
                         print("Emby role added")
+                        #if the user is added to emby then we remove him from waiting list
+                        waiting = db.delete_user_waiting(after.id)
+                        if(waiting):
+                            await self.write_logs("User **" + after.mention + "** deleted from waiting list.")                        
                         await self.write_logs("User **" + after.mention + "** invited to emby.")
                         username = await self.getusername(after, 'emby')
                         print("Username retrieved from user")
