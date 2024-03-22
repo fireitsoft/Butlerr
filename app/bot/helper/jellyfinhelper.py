@@ -146,7 +146,7 @@ def get_users(jellyfin_url, jellyfin_api_key):
 
     return response.json()
 
-def generate_password(length, lower=True, upper=True, numbers=True, symbols=True):
+def generate_password(length, lower=True, upper=True, numbers=True, symbols=False):
     character_list = []
     if not (lower or upper or numbers or symbols):
         raise ValueError("At least one character type must be provided")
