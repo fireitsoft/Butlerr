@@ -225,3 +225,8 @@ def read_all_waiting():
         all.append(row)
     return all
     
+def count_waiting():
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM waiting")
+    total=cur.fetchone()
+    return total[0]

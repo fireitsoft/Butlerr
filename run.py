@@ -12,6 +12,7 @@ import app.bot.helper.confighelper as confighelper
 import app.bot.helper.jellyfinhelper as jelly
 import app.bot.helper.embyhelper as emby
 import app.bot.helper.db as db
+import app.bot.helper.stats as stats
 from app.bot.helper.message import *
 from requests import ConnectTimeout
 from plexapi.myplex import MyPlexAccount
@@ -48,7 +49,7 @@ class Bot(commands.Bot):
         print("Loading media server connectors")
         await self.load_extension(f'app.bot.cogs.app')
         user_cleanup.start()
-
+        user_stats.start(self)
 
 bot = Bot()
 
@@ -56,6 +57,11 @@ bot = Bot()
 async def user_cleanup():
   await bot.wait_until_ready()
   db.cleanup_users()
+  
+@tasks.loop(seconds=60)
+async def user_stats(self):
+  await bot.wait_until_ready()
+  await stats.get_stats(self)  
 
 async def reload():
     await bot.reload_extension(f'app.bot.cogs.app')
