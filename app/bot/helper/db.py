@@ -147,9 +147,9 @@ def get_username(username, platform):
             if pt_username:
                 return pt_username
             else:
-                return "No users found"
+                return False
         except:
-            return "error in fetching from db"        
+            return False        
     else:
         return "username and platform cannot be empty"        
    
@@ -213,3 +213,15 @@ def read_all():
         #print(row[1]+' '+row[2])
         all.append(row)
     return all
+    
+    
+def read_all_waiting():
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM waiting")
+    rows = cur.fetchall()
+    all = []
+    for row in rows:
+        #print(row[1]+' '+row[2])
+        all.append(row)
+    return all
+    

@@ -725,6 +725,38 @@ class app(commands.Cog):
             await interaction.response.send_message("Database too large! Total: {total}".format(total = total),file=discord.File('db.txt'), ephemeral=True)
         else:
             await interaction.response.send_message(embed = embed, ephemeral=True)
+            
+    @app_commands.checks.has_permissions(administrator=True)
+    @butlerr_commands.command(name="dblw", description="View Waiting List database")
+    async def dbls(self, interaction: discord.Interaction):
+
+        embed = discord.Embed(title='Waiting List Database.')
+        all = db.read_all_waiting()
+        table = texttable.Texttable()
+        table.set_cols_dtype(["t", "t", "t"])
+        table.set_cols_align(["c", "c", "c"])
+        header = ("#", "Name", "Platform")
+        table.add_row(header)
+        for index, peoples in enumerate(all):
+            index = index + 1
+            id = int(peoples[1])
+            dbuser = self.bot.get_user(id)
+            platform = peoples[2]
+            try:
+                username = dbuser.name
+            except:
+                username = "User Not Found."
+            embed.add_field(name=f"**{index}. {username}**", value=platform+'\n', inline=False)
+            table.add_row((index, username, platform))
+        
+        total = str(len(all))
+        if(len(all)>25):
+            f = open("waiting.txt", "w")
+            f.write(table.draw())
+            f.close()
+            await interaction.response.send_message("Database too large! Total: {total}".format(total = total),file=discord.File('waiting.txt'), ephemeral=True)
+        else:
+            await interaction.response.send_message(embed = embed, ephemeral=True)            
         
             
     @app_commands.checks.has_permissions(administrator=True)
