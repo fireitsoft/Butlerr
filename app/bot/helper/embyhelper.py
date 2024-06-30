@@ -231,7 +231,7 @@ def get_lastactivity(emby_url, emby_api_key, emby_username):
     users = get_users(emby_url, emby_api_key)
     userId = None
     for user in users:
-        if user['Name'].lower() == emby_username:
+        if user['Name'].lower() == emby_username.lower():
             userId = user['Id']
         
     if userId is None:

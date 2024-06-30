@@ -183,7 +183,7 @@ def get_lastactivity(jellyfin_url, jellyfin_api_key, jellyfin_username):
     users = get_users(jellyfin_url, jellyfin_api_key)
     userId = None
     for user in users:
-        if user['Name'].lower() == jellyfin_username:
+        if user['Name'].lower() == jellyfin_username.lower():
             userId = user['Id']
         
     if userId is None:
