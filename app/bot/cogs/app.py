@@ -711,7 +711,7 @@ class app(commands.Cog):
                             
                 elif message.content.lower() == "emby" and emby_configured:
                     count = db.count_emby()
-                    if jellyfin_userlimit > 0:
+                    if emby_userlimit > 0:
                         if db.count_emby() >= emby_userlimit:
                             db.save_waiting(message.author.id, message.content.lower())
                             add_to_waiting_list = True
