@@ -63,6 +63,13 @@ if Plex_LIBS is None:
     Plex_LIBS = ["all"]
 else:
     Plex_LIBS = list(Plex_LIBS.split(','))
+
+# Get Plex users limit
+try:
+    plex_userlimit = config.get(BOT_SECTION, 'plex_userlimit')
+except:
+    plex_userlimit = 0
+
     
 # Get Jellyfin config
 try:
@@ -91,6 +98,14 @@ if jellyfin_libs is None:
 else:
     jellyfin_libs = list(jellyfin_libs.split(','))
 
+# Get Jellyfin users limit
+try:
+    jellyfin_userlimit = config.get(BOT_SECTION, 'jellyfin_userlimit')
+except:
+    jellyfin_userlimit = 0
+
+
+
 # Get Emby config
 try:
     EMBY_SERVER_URL = config.get(BOT_SECTION, 'emby_server_url')
@@ -117,6 +132,13 @@ if emby_libs is None:
     emby_libs = ["all"]
 else:
     emby_libs = list(emby_libs.split(','))
+
+# Get Emby users limit
+try:
+    emby_userlimit = config.get(BOT_SECTION, 'emby_userlimit')
+except:
+    emby_userlimit = 0
+
 
 # Get Enable config
 try:
@@ -266,7 +288,7 @@ class app(commands.Cog):
         if platform == "jelly":
             await embedinfo(after, f"Welcome To Jellyfin! Please reply with your desiered username to be added to the Jellyfin server!")
         elif platform == "emby":
-            await embedinfo(after, f"Welcome To Emby! Please reply with your desiered username to be added to the Emby server!")
+            await embedinfo(after, f"Welcome To Emby! If you have an Emby Connect account then please reply with your email and if you don't have one or don't know what it is please reply with a username to be added to the Emby server!")
         await embedinfo(after, f"If you do not respond within 24 hours, the request will be cancelled, and you will need to be invited again.")
         while (username is None):
             def check(m):
@@ -461,8 +483,10 @@ class app(commands.Cog):
                             if jelly.add_user(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY, username, password, jellyfin_libs):
                                 db.save_user(str(after.id), username, 'jellyfin')
                                 await asyncio.sleep(5)
-                                await embedcustom(after, "You have been added to Jellyfin!", {'Username': username, 'Password': f"||{password}||"})
-                                await embedinfo(after, f"Go to {JELLYFIN_EXTERNAL_URL} to log in!")
+                                #await embedcustom(after, "You have been added to Jellyfin!", {'Username': username, 'Password': f"||{password}||"})
+                                #await embedinfo(after, f"You have been added to Jellyfin!")
+                                #await embedinfo(after, f"Go to {JELLYFIN_EXTERNAL_URL} to log in!")
+                                await embedcustom2(after, "You have been added to Jellyfin!", f"Go and download the Jellyfin app for you device and install it. Open the app and on host enter: ```{JELLYFIN_EXTERNAL_URL}``` and if the app asks for a port then leave it empty. After that click connect on the server and login with the following details:", "If you need additional help ask in the help-center channel", {'Username': username, 'Password': f"||{password}||"})
                                 await self.write_logs("User **" + username + "** was created on jellyfin for discord user **" + after.mention + "**", "success")
                             else:
                                 await embedinfo(after, 'There was an error adding this user to Jellyfin. Message Server Admin.')
@@ -523,8 +547,12 @@ class app(commands.Cog):
                             if emby.add_user(EMBY_SERVER_URL, EMBY_API_KEY, username, password, emby_libs):
                                 db.save_user(str(after.id), username, 'emby')
                                 await asyncio.sleep(5)
-                                await embedcustom(after, "You have been added to Emby!", {'Username': username, 'Password': f"||{password}||"})
-                                await embedinfo(after, f"Go to {EMBY_EXTERNAL_URL} to log in!")
+                                #await embedcustom(after, "You have been added to Emby!", {'Username': username, 'Password': f"||{password}||"})
+                                #await embedinfo(after, f"Go to {EMBY_EXTERNAL_URL} to log in!")
+                                if emby.is_valid_email(username):
+                                    await embedcustom2(after, "You have been added to Emby!", f"Go and check your email for an Confirm Emby Account email and click on I Confirm This Link. After that the server should appear in your account. Go and download the Emby app for you device, install it and log in.", "If you need additional help ask in the help-center channel", {})
+                                else:
+                                    await embedcustom2(after, "You have been added to Emby!", f"Go and download the Emby app for you device and install it. Open the app and on host enter: ```{EMBY_EXTERNAL_URL}``` and if the app asks for a port then leave it empty or set it to 8196. After that click connect on the server and login with the following details:", "If you need additional help ask in the help-center channel", {'Username': username, 'Password': f"||{password}||"})
                                 await self.write_logs("User **" + username + "** was created on emby for discord user **" + after.mention + "**", "success")
                             else:
                                 await embedinfo(after, 'There was an error adding this user to Emby. Message Server Admin.')
@@ -584,14 +612,14 @@ class app(commands.Cog):
         deleted = db.delete_user(member.id)
         if deleted:
             if USE_PLEX and plex_configured:
-                if email is not None:
-                    await self.write_logs("Removed {} from db because user left discord server.".format(email))
+                if email is not False:
+                    await self.write_logs("Removed {} from plex because user left discord server.".format(email))
             if USE_JELLYFIN and jellyfin_configured:
-                if jellyfin_username is not None:
-                    await self.write_logs("Removed {} from db because user left discord server.".format(jellyfin_username))
+                if jellyfin_username is not False:
+                    await self.write_logs("Removed {} from jellyfin because user left discord server.".format(jellyfin_username))
             if USE_EMBY and emby_configured:
-                if emby_username is not None:
-                    await self.write_logs("Removed {} from db because user left discord server.".format(emby_username))
+                if emby_username is not False:
+                    await self.write_logs("Removed {} from emby because user left discord server.".format(emby_username))
 
         waiting = db.delete_user_waiting(member.id)                   
         if(waiting):
@@ -612,16 +640,63 @@ class app(commands.Cog):
         #user_message = str(message.content) 
         if(str(message.channel.id) == '1208463345057800202'):
             if message.content.lower() in ("emby", "jellyfin", "plex"):
-                db.save_waiting(message.author.id, message.content.lower())
+                add_to_waiting_list = False
+                if message.content.lower() == "jellyfin" and jellyfin_configured:
+                    count = db.count_jellyfin()
+                    if jellyfin_userlimit > 0:
+                        if db.count_jellyfin() >= jellyfin_userlimit:
+                            db.save_waiting(message.author.id, message.content.lower())
+                            add_to_waiting_list = True
+                           
+                    else:
+                        role = discord.utils.get(message.guild.roles, name="jelly")
+                        if role:
+                            # Adaugă rolul utilizatorului
+                            await message.author.add_roles(role)
+                        else:
+                            await message.channel.send("Role not found!")
+                            
+                elif message.content.lower() == "emby" and emby_configured:
+                    count = db.count_emby()
+                    if jellyfin_userlimit > 0:
+                        if db.count_emby() >= emby_userlimit:
+                            db.save_waiting(message.author.id, message.content.lower())
+                            add_to_waiting_list = True
+                           
+                    else:
+                        role = discord.utils.get(message.guild.roles, name="emby")
+                        if role:
+                            # Adaugă rolul utilizatorului
+                            await message.author.add_roles(role)
+                        else:
+                            await message.channel.send("Role not found!")
 
-                place = db.get_waiting_place(message.author.id)
-                if place == 1:
-                    await embedinfo(message.author,"You are number {} on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
-                elif place > 1 and place < 4:
-                    await embedinfo(message.author,"You are on the {}rd place on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
-                else:
-                    await embedinfo(message.author,"You are on the {}th place on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
-                    #await message.author.send("You're name was added to the waiting list. You are on the {}th place on the list!".format(place))  
+                            
+                elif message.content.lower() == "plex" and plex_configured:
+                    count = db.count_plex()
+                    if plex_userlimit > 0:
+                        if db.count_plex() >= plex_userlimit:
+                            db.save_waiting(message.author.id, message.content.lower())
+                            add_to_waiting_list = True
+                           
+                    else:
+                        role = discord.utils.get(message.guild.roles, name="plexy")
+                        if role:
+                            # Adaugă rolul utilizatorului
+                            await message.author.add_roles(role)
+                        else:
+                            await message.channel.send("Role not found!")
+
+                if add_to_waiting_list:
+                    db.save_waiting(message.author.id, message.content.lower())
+                    place = db.get_waiting_place(message.author.id)
+                    if place == 1:
+                        await embedinfo(message.author,"You are number {} on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
+                    elif place > 1 and place < 4:
+                        await embedinfo(message.author,"You are on the {}rd place on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
+                    else:
+                        await embedinfo(message.author,"You are on the {}th place on the waiting list! When your turn comes you will get an invite in DM by a bot, and you will have 24 hours to respond or the invite will expire. You can always check your position using the !spot command.".format(place))
+                        #await message.author.send("You're name was added to the waiting list. You are on the {}th place on the list!".format(place))  
 
 
         #we make a public command

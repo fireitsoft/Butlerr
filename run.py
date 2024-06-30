@@ -58,7 +58,7 @@ async def user_cleanup():
   await bot.wait_until_ready()
   db.cleanup_users()
   
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=600)
 async def user_stats(self):
   await bot.wait_until_ready()
   await stats.get_stats(self)  
@@ -487,6 +487,47 @@ async def disableemby(interaction: discord.Interaction):
     confighelper.USE_EMBY = False
     await interaction.response.send_message("Emby disabled. Restarting server. Give it a few seconds.",
                                             ephemeral=True)
+    print("Bot has restarted. Give it a few seconds.")
+
+
+# Set plex user limits
+@plex_commands.command(name="userlimit", description="Set plex user limit")
+@app_commands.checks.has_permissions(administrator=True)
+async def userlimit(interaction: discord.Interaction, limit: int):
+    #if confighelper.USE_EMBY:
+    #    await interaction.response.send_message("Emby already enabled.", ephemeral=True)
+    #    return
+    confighelper.change_config("plex_userlimit", limit)
+    await interaction.response.send_message("Plex limit set. Restarting server. Give it a few seconds.",
+                                            ephemeral=True)
+    await reload()
+    print("Bot has restarted. Give it a few seconds.")
+
+
+# Set jellyfin user limits
+@jellyfin_commands.command(name="userlimit", description="Set jellyfin user limit")
+@app_commands.checks.has_permissions(administrator=True)
+async def userlimit(interaction: discord.Interaction, limit: int):
+    #if confighelper.USE_EMBY:
+    #    await interaction.response.send_message("Emby already enabled.", ephemeral=True)
+    #    return
+    confighelper.change_config("jellyfin_userlimit", limit)
+    await interaction.response.send_message("Jellyfin limit set. Restarting server. Give it a few seconds.",
+                                            ephemeral=True)
+    await reload()
+    print("Bot has restarted. Give it a few seconds.")
+
+# Set emby user limits
+@emby_commands.command(name="userlimit", description="Set emby user limit")
+@app_commands.checks.has_permissions(administrator=True)
+async def userlimit(interaction: discord.Interaction, limit: int):
+    #if confighelper.USE_EMBY:
+    #    await interaction.response.send_message("Emby already enabled.", ephemeral=True)
+    #    return
+    confighelper.change_config("emby_userlimit", limit)
+    await interaction.response.send_message("Emby limit set. Restarting server. Give it a few seconds.",
+                                            ephemeral=True)
+    await reload()
     print("Bot has restarted. Give it a few seconds.")
 
 

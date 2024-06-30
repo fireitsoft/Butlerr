@@ -15,6 +15,13 @@ async def embedcustom(recipient, title, fields, ephemeral=True):
         embed.add_field(name=str(k), value=str(fields[k]), inline=True)
     await send_embed(recipient, embed, ephemeral)
 
+async def embedcustom2(recipient, title, description, footer, fields, ephemeral=True):
+    embed = discord.Embed(title=title, description=description)
+    embed.set_footer(text=footer)
+    for k in fields:
+        embed.add_field(name=str(k), value=str(fields[k]), inline=True)
+    await send_embed(recipient, embed, ephemeral)    
+
 async def send_info(recipient, message, ephemeral=True):
     if isinstance(recipient, discord.InteractionResponse):
         await recipient.send_message(message, ephemeral=ephemeral)

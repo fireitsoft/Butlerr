@@ -1,6 +1,7 @@
 import requests
 import random
 import string
+import re
 
 def add_user(emby_url, emby_api_key, username, password, emby_libs):
     try:
@@ -9,7 +10,8 @@ def add_user(emby_url, emby_api_key, username, password, emby_libs):
         querystring = {"api_key":emby_api_key}
         payload = {
             "Name": username,
-            "Password": password
+            "Password": password,
+            "ConnectUsername": username
         }
         headers = {"Content-Type": "application/json"}
         response = requests.request("POST", url, json=payload, headers=headers, params=querystring)
@@ -37,7 +39,25 @@ def add_user(emby_url, emby_api_key, username, password, emby_libs):
 
         if response.status_code != 204:
             print(f"Error setting user password: {response.text}")
-            return False  
+            return False
+
+
+        #if email was set then we set an emby account
+        if is_valid_email(username):
+            url = f"{emby_url}/Users/{userId}/Connect/Link"
+            #url = f"{emby_url}/Users/{userId}"
+            querystring = {"api_key":emby_api_key}
+            payload = {
+                #"Id": userId,
+                "ConnectUsername": username
+            }
+
+            headers = {"Content-Type": "application/json"}
+            response = requests.request("POST", url, json=payload, headers=headers, params=querystring)
+
+            if response.text == None:
+                print(f"Error setting user connect account: {response.text}")
+  
 
         # Grant access to User
         url = f"{emby_url}/Users/{userId}/Policy"
@@ -196,3 +216,10 @@ def get_status(emby_url, emby_api_key):
     querystring = {"api_key":emby_api_key}
     response = requests.request("GET", url, params=querystring, timeout=5)
     return response.status_code
+
+def is_valid_email(email):
+    regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    if re.match(regex, email):
+        return True
+    else:
+        return False

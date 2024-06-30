@@ -230,3 +230,23 @@ def count_waiting():
     cur.execute("SELECT COUNT(*) FROM waiting")
     total=cur.fetchone()
     return total[0]
+
+
+def count_jellyfin():
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM clients WHERE jellyfin_username IS NOT NULL")
+    total=cur.fetchone()
+    return total[0]
+
+def count_emby():
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM clients WHERE emby_username IS NOT NULL")
+    total=cur.fetchone()
+    return total[0]
+
+def count_plex():
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM clients WHERE plex_email IS NOT NULL")
+    total=cur.fetchone()
+    return total[0]
+

@@ -5,14 +5,14 @@ from dotenv import load_dotenv
 
 CONFIG_PATH = 'app/config/config.ini'
 BOT_SECTION = 'bot_envs'
-BUTLERR_VERSION = 1.3
+BUTLERR_VERSION = 1.4
 
 config = configparser.ConfigParser()
 
 CONFIG_KEYS = ['username', 'password', 'discord_bot_token', 'discord_waiting_list', 'plex_user', 'plex_pass', 'plex_token',
-                'plex_base_url', 'plex_roles', 'plex_server_name', 'plex_libs', 'owner_id', 'channel_id',
+                'plex_base_url', 'plex_roles', 'plex_server_name', 'plex_libs', 'plex_userlimit','owner_id', 'channel_id',
                 'auto_remove_user', 'jellyfin_api_key', 'jellyfin_server_url', 'jellyfin_roles',
-                'jellyfin_libs', 'emby_api_key', 'emby_server_url', 'emby_roles', 'emby_libs', 'plex_enabled', 'jellyfin_enabled', 'emby_enabled', 'jellyfin_external_url', 'emby_external_url']
+                'jellyfin_libs', 'jellyfin_userlimit','emby_api_key', 'emby_server_url', 'emby_roles', 'emby_libs', 'plex_enabled', 'jellyfin_enabled', 'emby_enabled', 'emby_userlimit','jellyfin_external_url', 'emby_external_url']
 
 # settings
 Discord_bot_token = ""
@@ -23,14 +23,17 @@ PLEX_SERVER_NAME = ""
 PLEX_TOKEN = ""
 PLEX_BASE_URL = ""
 Plex_LIBS = None
+plex_userlimit = ""
 JELLYFIN_SERVER_URL = ""
 JELLYFIN_API_KEY = ""
 jellyfin_libs = ""
 jellyfin_roles = None
+jellyfin_userlimit = ""
 EMBY_SERVER_URL = ""
 EMBY_API_KEY = ""
 emby_libs = ""
 emby_roles = None
+emby_userlimit = ""
 plex_configured = True
 jellyfin_configured = True
 emby_configured = True
@@ -104,6 +107,12 @@ if Plex_LIBS is None:
     Plex_LIBS = ["all"]
 else:
     Plex_LIBS = list(Plex_LIBS.split(','))
+
+# Get Plex users limit
+try:
+    plex_userlimit = config.get(BOT_SECTION, 'plex_userlimit')
+except:
+    plex_userlimit = 0    
     
 # Get Jellyfin config
 try:
@@ -143,6 +152,12 @@ if jellyfin_libs is None:
 else:
     jellyfin_libs = list(jellyfin_libs.split(','))
 
+# Get Jellyfin users limit
+try:
+    jellyfin_userlimit = config.get(BOT_SECTION, 'jellyfin_userlimit')
+except:
+    jellyfin_userlimit = 0
+
 # Get Emby config
 try:
     EMBY_SERVER_URL = config.get(BOT_SECTION, 'emby_server_url')
@@ -181,6 +196,12 @@ if emby_libs is None:
 else:
     emby_libs = list(emby_libs.split(','))
     
+# Get Emby users limit
+try:
+    emby_userlimit = config.get(BOT_SECTION, 'emby_userlimit')
+except:
+    emby_userlimit = 0
+
 
 # Get Enable config
 try:

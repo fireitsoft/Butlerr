@@ -1,12 +1,11 @@
 import discord
 import app.bot.helper.db as db
+from app.bot.helper.confighelper import *
 
 async def get_stats(client):
 
     #print(ctx.guild.member_count)
     # print(client.guild.member_count)
-    
-    
     
     
     guilds = client.get_guild 
@@ -44,10 +43,10 @@ async def get_stats(client):
         wchannel = client.get_channel(1231334796370776074) # waiting users
         
         await tchannel.edit(name = total_members)         
-        await ochannel.edit(name = 'Online Members:' + f' {online}')   
-        await jchannel.edit(name = 'Jellyfin Members:' + f' {jelly}')
-        await echannel.edit(name = 'Emby Members:' + f' {emby}') 
-        await wchannel.edit(name = 'Waiting Members:' + f' {db.count_waiting()}') 
+        await ochannel.edit(name = 'Online Users:' + f' {online}')   
+        await jchannel.edit(name = 'Jellyfin Users:' + f' {jelly} / {jellyfin_userlimit}')
+        await echannel.edit(name = 'Emby Users:' + f' {emby} / {emby_userlimit}') 
+        await wchannel.edit(name = 'Waiting Users:' + f' {db.count_waiting()}') 
         #print(db.count_waiting())                               
         #print(emby)
     
