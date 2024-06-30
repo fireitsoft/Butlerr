@@ -1,6 +1,7 @@
 import requests
 import random
 import string
+from datetime import datetime
 
 def add_user(jellyfin_url, jellyfin_api_key, username, password, jellyfin_libs):
     try:
