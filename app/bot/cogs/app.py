@@ -374,7 +374,7 @@ class app(commands.Cog):
             user_id = int(peoples[1])
             dbuser = self.bot.get_user(user_id)
             if dbuser:
-                last = jellyfin.get_lastactivity(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY,peoples[3])
+                last = jelly.get_lastactivity(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY,peoples[3])
                 if last:
                     if last > days:
                         guild = response.guild

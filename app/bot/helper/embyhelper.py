@@ -252,7 +252,7 @@ def get_lastactivity(emby_url, emby_api_key, emby_username):
         current_date = datetime.utcnow()
         time_difference = current_date - target_date
         days_difference = time_difference.days
-        return 0
+        return days_difference
     else:
         return False
   
