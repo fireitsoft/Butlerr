@@ -224,6 +224,33 @@ def read_all_waiting():
         #print(row[1]+' '+row[2])
         all.append(row)
     return all
+
+def read_all_plex():
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM clients WHERE plex_email IS NOT NULL")
+    rows = cur.fetchall()
+    all = []
+    for row in rows:
+        all.append(row)
+    return all
+
+def read_all_jellyfin():
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM clients WHERE jellyfin_username IS NOT NULL")
+    rows = cur.fetchall()
+    all = []
+    for row in rows:
+        all.append(row)
+    return all
+
+def read_all_emby():
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM clients WHERE emby_username IS NOT NULL")
+    rows = cur.fetchall()
+    all = []
+    for row in rows:
+        all.append(row)
+    return all
     
 def count_waiting():
     cur = conn.cursor()

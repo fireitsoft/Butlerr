@@ -66,7 +66,7 @@ else:
 
 # Get Plex users limit
 try:
-    plex_userlimit = config.get(BOT_SECTION, 'plex_userlimit')
+    plex_userlimit = int(config.get(BOT_SECTION, 'plex_userlimit'))
 except:
     plex_userlimit = 0
 
@@ -100,7 +100,7 @@ else:
 
 # Get Jellyfin users limit
 try:
-    jellyfin_userlimit = config.get(BOT_SECTION, 'jellyfin_userlimit')
+    jellyfin_userlimit = int(config.get(BOT_SECTION, 'jellyfin_userlimit'))
 except:
     jellyfin_userlimit = 0
 
@@ -135,7 +135,7 @@ else:
 
 # Get Emby users limit
 try:
-    emby_userlimit = config.get(BOT_SECTION, 'emby_userlimit')
+    emby_userlimit = int(config.get(BOT_SECTION, 'emby_userlimit'))
 except:
     emby_userlimit = 0
 
@@ -365,6 +365,59 @@ class app(commands.Cog):
             return True
         else:
             await embederror(response, f'There was an error removing this user from Jellyfin. Check logs for more info.')
+            return False
+
+    async def cleanupjellyfin(self, response, days):
+        all = db.read_all_jellyfin()
+        removed_count = 0
+        for index, peoples in enumerate(all):
+            user_id = int(peoples[1])
+            dbuser = self.bot.get_user(user_id)
+            if dbuser:
+                last = jellyfin.get_lastactivity(JELLYFIN_SERVER_URL, JELLYFIN_API_KEY,peoples[3])
+                if last:
+                    if last > days:
+                        guild = response.guild
+                        member = guild.get_member(user_id)
+                        if member:
+                            jellyfin_role = discord.utils.get(guild.roles, name="jelly")
+                            if jellyfin_role and jellyfin_role in member.roles:
+                                #await member.remove_roles(jellyfin_role)
+                                #await response.send_message(f"Removed {emby_role_name} role from {member.display_name} due to inactivity.")
+                                removed_count += 1
+                    
+        await response.channel.send(f"Removed {removed_count} users from the 'Jellyfin' role due to inactivity.")
+
+        if removed_count > 0:
+            return True
+        else:
+            return False
+
+    async def cleanupemby(self, response, days):
+        all = db.read_all_emby()
+        removed_count = 0
+        #all = db.read_all()
+        for index, peoples in enumerate(all):
+            user_id = int(peoples[1])
+            dbuser = self.bot.get_user(user_id)
+            if dbuser:
+                last = emby.get_lastactivity(EMBY_SERVER_URL, EMBY_API_KEY,peoples[4])
+                if last:
+                    if last > days:
+                        guild = response.guild
+                        member = guild.get_member(user_id)
+                        if member:
+                            emby_role = discord.utils.get(guild.roles, name="emby")
+                            if emby_role and emby_role in member.roles:
+                                #await member.remove_roles(emby_role)
+                                #await response.send_message(f"Removed {emby_role_name} role from {member.display_name} due to inactivity.")
+                                removed_count += 1
+                    
+        await response.channel.send(f"Removed {removed_count} users from the 'Emby' role due to inactivity.")
+
+        if removed_count > 0:
+            return True
+        else:
             return False
 
     async def addtoemby(self, username, password, response):
@@ -648,13 +701,13 @@ class app(commands.Cog):
                             db.save_waiting(message.author.id, message.content.lower())
                             add_to_waiting_list = True
                            
-                    else:
-                        role = discord.utils.get(message.guild.roles, name="jelly")
-                        if role:
-                            # Adaugă rolul utilizatorului
-                            await message.author.add_roles(role)
                         else:
-                            await message.channel.send("Role not found!")
+                            role = discord.utils.get(message.guild.roles, name="jelly")
+                            if role:
+                                # Adaugă rolul utilizatorului
+                                await message.author.add_roles(role)
+                            else:
+                                await message.channel.send("Role not found!")
                             
                 elif message.content.lower() == "emby" and emby_configured:
                     count = db.count_emby()
@@ -663,13 +716,13 @@ class app(commands.Cog):
                             db.save_waiting(message.author.id, message.content.lower())
                             add_to_waiting_list = True
                            
-                    else:
-                        role = discord.utils.get(message.guild.roles, name="emby")
-                        if role:
-                            # Adaugă rolul utilizatorului
-                            await message.author.add_roles(role)
                         else:
-                            await message.channel.send("Role not found!")
+                            role = discord.utils.get(message.guild.roles, name="emby")
+                            if role:
+                                # Adaugă rolul utilizatorului
+                                await message.author.add_roles(role)
+                            else:
+                                await message.channel.send("Role not found!")
 
                             
                 elif message.content.lower() == "plex" and plex_configured:
@@ -678,14 +731,13 @@ class app(commands.Cog):
                         if db.count_plex() >= plex_userlimit:
                             db.save_waiting(message.author.id, message.content.lower())
                             add_to_waiting_list = True
-                           
-                    else:
-                        role = discord.utils.get(message.guild.roles, name="plexy")
-                        if role:
-                            # Adaugă rolul utilizatorului
-                            await message.author.add_roles(role)
                         else:
-                            await message.channel.send("Role not found!")
+                            role = discord.utils.get(message.guild.roles, name="plexy")
+                            if role:
+                                # Adaugă rolul utilizatorului
+                                await message.author.add_roles(role)
+                            else:
+                                await message.channel.send("Role not found!")
 
                 if add_to_waiting_list:
                     db.save_waiting(message.author.id, message.content.lower())
@@ -736,6 +788,11 @@ class app(commands.Cog):
     async def jellyfinremove(self, interaction: discord.Interaction, username: str):
         await self.removefromjellyfin(username, interaction.response)
 
+    @app_commands.checks.has_permissions(administrator=True)
+    @jellyfin_commands.command(name="cleanup", description="Run cleanup for jellyfin")
+    async def jellycleanup(self, interaction: discord.Interaction, days: int):
+        await self.cleanupjellyfin(interaction, days)
+        await embedcustom(interaction.response, "Cleanup Done", {})
 
     @app_commands.checks.has_permissions(administrator=True)
     @emby_commands.command(name="invite", description="Invite a user to Emby")
@@ -747,7 +804,13 @@ class app(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     @emby_commands.command(name="remove", description="Remove a user from Emby")
     async def embyremove(self, interaction: discord.Interaction, username: str):
-        await self.removefromemby(username, interaction.response)        
+        await self.removefromemby(username, interaction.response)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @emby_commands.command(name="cleanup", description="Run cleanup for emby")
+    async def embycleanup(self, interaction: discord.Interaction, days: int):
+        await self.cleanupemby(interaction, days)
+        await embedcustom(interaction.response, "Cleanup Done", {})
     
     @app_commands.checks.has_permissions(administrator=True)
     @butlerr_commands.command(name="dbadd", description="Add a user to the Butlerr database")

@@ -175,3 +175,34 @@ def get_status(jellyfin_url, jellyfin_api_key):
     querystring = {"api_key":jellyfin_api_key}
     response = requests.request("GET", url, params=querystring, timeout=5)
     return response.status_code
+
+def get_lastactivity(jellyfin_url, jellyfin_api_key, jellyfin_username):
+
+    # Get User ID
+    users = get_users(jellyfin_url, jellyfin_api_key)
+    userId = None
+    for user in users:
+        if user['Name'].lower() == jellyfin_username:
+            userId = user['Id']
+        
+    if userId is None:
+        # User not found
+        print(f"Error finding user {jellyfin_username} from Jellyfin: Could not find user.")
+        return False
+        
+
+    url = f"{jellyfin_url}/Users/{userId}"
+
+    querystring = {"api_key":jellyfin_api_key}
+    response = requests.request("GET", url, params=querystring, timeout=5)
+    text = response.json()
+    if "LastActivityDate" in text:
+        target_date_str = text["LastActivityDate"] 
+        target_date_str = target_date_str.split('.')[0] + 'Z'
+        target_date = datetime.strptime(target_date_str, "%Y-%m-%dT%H:%M:%SZ")
+        current_date = datetime.utcnow()
+        time_difference = current_date - target_date
+        days_difference = time_difference.days
+        return days_difference
+    else:
+        return False
