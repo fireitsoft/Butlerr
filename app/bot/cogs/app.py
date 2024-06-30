@@ -382,7 +382,7 @@ class app(commands.Cog):
                         if member:
                             jellyfin_role = discord.utils.get(guild.roles, name="jelly")
                             if jellyfin_role and jellyfin_role in member.roles:
-                                #await member.remove_roles(jellyfin_role)
+                                await member.remove_roles(jellyfin_role)
                                 #await response.send_message(f"Removed {emby_role_name} role from {member.display_name} due to inactivity.")
                                 removed_count += 1
                     
@@ -409,7 +409,7 @@ class app(commands.Cog):
                         if member:
                             emby_role = discord.utils.get(guild.roles, name="emby")
                             if emby_role and emby_role in member.roles:
-                                #await member.remove_roles(emby_role)
+                                await member.remove_roles(emby_role)
                                 #await response.send_message(f"Removed {emby_role_name} role from {member.display_name} due to inactivity.")
                                 removed_count += 1
                     
