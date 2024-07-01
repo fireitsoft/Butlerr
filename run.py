@@ -58,7 +58,7 @@ async def user_cleanup():
   await bot.wait_until_ready()
   db.cleanup_users()
   
-@tasks.loop(seconds=600)
+@tasks.loop(seconds=120)
 async def user_stats(self):
   await bot.wait_until_ready()
   await stats.get_stats(self)  
